@@ -2,3 +2,11 @@
 wandb
 __pycache__
 .idea
+data/
+images/
+videos/
+*.zip
+*.tar.gz
+*.tar
+*.gz
+*.rar
