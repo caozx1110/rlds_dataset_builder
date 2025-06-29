@@ -5,6 +5,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 import sys
 import os
+import json
 from PIL import Image
 import io
 
@@ -28,9 +29,26 @@ def _decode_image(img_bytes, is_depth=False):
     
     return img_array
 
+def _load_task_description(episode_path):
+    """从metadata.json文件中加载任务描述"""
+    # 获取episode文件所在目录
+    episode_dir = os.path.dirname(episode_path)
+    metadata_path = os.path.join(episode_dir, "metadata.json")
+    
+    try:
+        with open(metadata_path, 'r') as f:
+            metadata = json.load(f)
+            return metadata.get("task_description_english", "Unknown task")
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        print(f"Warning: Could not load task description from {metadata_path}")
+        return "Unknown task"
+
 def _generate_examples(paths) -> Iterator[Tuple[str, Any]]:
     """Yields episodes for list of data paths."""
     def _parse_example(episode_path):
+        # 加载任务描述
+        task_description = _load_task_description(episode_path)
+        
         with h5py.File(episode_path, "r") as F:
             actions = F["/action"][()]  # (T, 14)
             qpos = F["/observations/qpos"][()]  # (T, 14)
@@ -74,12 +92,14 @@ def _generate_examples(paths) -> Iterator[Tuple[str, Any]]:
                 'is_first': i == 0,
                 'is_last': i == (actions.shape[0] - 1),
                 'is_terminal': i == (actions.shape[0] - 1),
+                'language_instruction': task_description,  # 添加语言指令
             })
 
         sample = {
             'steps': episode,
             'episode_metadata': {
-                'file_path': episode_path
+                'file_path': episode_path,
+                'task_description': task_description,  # 添加到元数据中
             }
         }
         return episode_path, sample
@@ -181,10 +201,16 @@ class rhos_aloha(MultiThreadedDatasetBuilder):
                         dtype=np.bool_,
                         doc='True on last step of the episode.'
                     ),
+                    'language_instruction': tfds.features.Text(
+                        doc='Language instruction for the task.'
+                    ),
                 }),
                 'episode_metadata': tfds.features.FeaturesDict({
                     'file_path': tfds.features.Text(
                         doc='Path to the original data file.'
+                    ),
+                    'task_description': tfds.features.Text(
+                        doc='Task description from metadata.json.'
                     ),
                 }),
             }))
