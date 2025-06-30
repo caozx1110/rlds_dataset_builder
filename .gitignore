@@ -10,3 +10,4 @@ videos/
 *.tar
 *.gz
 *.rar
+.conda/

@@ -217,7 +217,10 @@ class rhos_aloha(MultiThreadedDatasetBuilder):
 
     def _split_paths(self):
         """Define filepaths for data splits."""
-        return {"train": glob.glob("/home/ubuntu/ws/rlds_dataset_builder/data/unzip_handbag/*.hdf5")}
+        return {
+            "train": glob.glob("/inspire/hdd/project/robot-hardware/public/rhos_data/unzip_handbag/task_00017_user_00004_scene_00001/*.hdf5"),
+            "val": glob.glob("/inspire/hdd/project/robot-hardware/public/rhos_data/unzip_handbag/task_00017_user_00004_scene_00001/*.hdf5")
+        }
         # return {
         #     "train": ["/home/ubuntu/ws/rlds_dataset_builder/data/unzip_handbag/episode_8.hdf5"]
         # }
